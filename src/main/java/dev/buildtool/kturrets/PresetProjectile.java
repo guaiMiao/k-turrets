@@ -13,6 +13,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.AbstractHurtingProjectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -99,7 +100,7 @@ public abstract class PresetProjectile extends AbstractHurtingProjectile {
 
     @Override
     public void tick() {
-        super.tick();
+//        super.tick();
         step();
     }
 
@@ -109,13 +110,20 @@ public abstract class PresetProjectile extends AbstractHurtingProjectile {
     protected void step() {
         Entity entity = this.getOwner();
         if (this.level.isClientSide || (entity == null || !entity.isRemoved()) && this.level.hasChunkAt(this.blockPosition())) {
-            super.tick();
+            this.baseTick();
+
             if (this.shouldBurn()) {
                 this.setSecondsOnFire(1);
             }
 
             HitResult raytraceresult = ProjectileUtil.getHitResult(this, this::canHitEntity);
-            if (raytraceresult.getType() != HitResult.Type.MISS && !net.minecraftforge.event.ForgeEventFactory.onProjectileImpact(this, raytraceresult)) {
+            boolean notHitTurret = true;
+            if (raytraceresult.getType() == HitResult.Type.ENTITY) {
+                if (((EntityHitResult) raytraceresult).getEntity() instanceof Turret){
+                    notHitTurret = false;
+                }
+            }
+            if (raytraceresult.getType() != HitResult.Type.MISS && notHitTurret && !net.minecraftforge.event.ForgeEventFactory.onProjectileImpact(this, raytraceresult)) {
                 this.onHit(raytraceresult);
             }
 
